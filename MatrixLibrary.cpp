@@ -1,102 +1,85 @@
-#include "library.h"
-#include <iostream>
-#include <memory>
-#include <algorithm> // for std::fill
-#include <stdexcept> // for std::invalid_argument
-#include <random>
-#include <vector>
+#include "MatrixLibrary.h"
 
 
-class Matrix {
-public:
 
-    // Primary Constructor: Initialize all elements to zero
-    Matrix(int rows, int columns)
-            : rows_(rows), columns_(columns), data_(std::make_unique<float[]>(rows * columns)) {
-        if (rows <= 0 || columns <= 0) {
-            throw std::invalid_argument("Matrix dimensions must be positive integers.");
-        }
-        // Initialize all elements to zero
-        std::fill(data_.get(), data_.get() + rows * columns, 0.0f);
+// Matrix class member functions
+
+Matrix::Matrix(int rows, int columns)
+        : rows_(rows), columns_(columns), data_(std::make_unique<float[]>(rows * columns)) {
+    if (rows <= 0 || columns <= 0) {
+        throw std::invalid_argument("Matrix dimensions must be positive integers.");
     }
+    std::fill(data_.get(), data_.get() + rows * columns, 0.0f);
+}
 
-    // Secondary Constructor: Initialize all elements to a specified value
-    Matrix(int rows, int columns, float value)
-            : rows_(rows), columns_(columns), data_(std::make_unique<float[]>(rows * columns)) {
-        if (rows <= 0 || columns <= 0) {
-            throw std::invalid_argument("Matrix dimensions must be positive integers.");
-        }
-        // Initialize all elements to the specified value
-        std::fill(data_.get(), data_.get() + rows * columns, value);
+Matrix::Matrix(int rows, int columns, float value)
+        : rows_(rows), columns_(columns), data_(std::make_unique<float[]>(rows * columns)) {
+    if (rows <= 0 || columns <= 0) {
+        throw std::invalid_argument("Matrix dimensions must be positive integers.");
     }
+    std::fill(data_.get(), data_.get() + rows * columns, value);
+}
 
+Matrix::Matrix(const Matrix& other)
+        : rows_(other.rows_), columns_(other.columns_), data_(std::make_unique<float[]>(other.rows_ * other.columns_)) {
+    std::copy(other.data_.get(), other.data_.get() + (other.rows_ * other.columns_), data_.get());
+    std::cout << "Matrix copied\n";
+}
 
+Matrix::Matrix(Matrix&& other) noexcept
+        : rows_(other.rows_), columns_(other.columns_), data_(std::move(other.data_)) {
+    other.rows_ = 0;
+    other.columns_ = 0;
+    std::cout << "Matrix moved\n";
+}
 
-
-    // Copy constructor for deep copying
-    Matrix(const Matrix& other)
-            : rows_(other.rows_), columns_(other.columns_), data_(std::make_unique<float[]>(other.rows_ * other.columns_)) {
+Matrix& Matrix::operator=(const Matrix& other) {
+    if (this != &other) {
+        if (rows_ != other.rows_ || columns_ != other.columns_) {
+            throw std::invalid_argument("Matrices dimensions do not match.");
+        }
+        data_ = std::make_unique<float[]>(other.rows_ * other.columns_);
         std::copy(other.data_.get(), other.data_.get() + (other.rows_ * other.columns_), data_.get());
-        std::cout << "Matrix copied\n";
     }
+    return *this;
+}
 
-    // Move constructor
-    Matrix(Matrix&& other) noexcept
-            : rows_(other.rows_), columns_(other.columns_), data_(std::move(other.data_)) {
+Matrix& Matrix::operator=(Matrix&& other) noexcept {
+    if (this != &other) {
+        rows_ = other.rows_;
+        columns_ = other.columns_;
+        data_ = std::move(other.data_);
         other.rows_ = 0;
         other.columns_ = 0;
-        std::cout << "Matrix moved\n";
     }
+    return *this;
+}
 
 
-
-
-    //Helper functions
-
-
-
-
-
-
-
-    // Static print function
-    static void Print(const Matrix& matrix) {
-        for (int i = 0; i < matrix.rows_; ++i) {
-            for (int j = 0; j < matrix.columns_; ++j) {
-                std::cout << matrix(i, j) << " ";
-            }
-            std::cout << std::endl;
+void Matrix::Print(const Matrix& matrix) {
+    for (int i = 0; i < matrix.rows_; ++i) {
+        for (int j = 0; j < matrix.columns_; ++j) {
+            std::cout << matrix(i, j) << " ";
         }
+        std::cout << std::endl;
     }
+}
 
-    // Access and modify element (non-const version)
-    float& operator()(int row, int column) {
-        return data_[row * columns_ + column];
-    }
+float& Matrix::operator()(int row, int column) {
+    return data_[row * columns_ + column];
+}
 
-    // Access element (const version)
-    const float& operator()(int row, int column) const {
-        return data_[row * columns_ + column];
-    }
+const float& Matrix::operator()(int row, int column) const {
+    return data_[row * columns_ + column];
+}
 
+int Matrix::rows() const {
+    return rows_;
+}
 
-    // Get number of rows
-    int rows() const {
-        return rows_;
-    }
-
-    // Get number of columns
-    int columns() const {
-        return columns_;
-    }
-
-
-private:
-    int rows_;
-    int columns_;
-    std::unique_ptr<float[]> data_;
-
-};
+int Matrix::columns() const {
+    return columns_;
+}
 
 
 
@@ -104,7 +87,7 @@ private:
 
 
 // Matrix Multiplication Function
-void Matrix_Multiply( const Matrix& first,const Matrix& second,Matrix& result) {
+void Matrix_Multiply( Matrix& result,const Matrix& first,const Matrix& second) {
 
     if (&result == &first || &result == &second) {
         throw std::invalid_argument("Result matrix must be different from input matrices.");
@@ -133,7 +116,7 @@ void Matrix_Multiply( const Matrix& first,const Matrix& second,Matrix& result) {
 //will be used during multiplication
 
 // Helper function to create a result matrix for multiplication
-Matrix Matrix_Autocreate(const Matrix& first, const Matrix& second) {
+Matrix Matrix_AutoCreate(const Matrix& first, const Matrix& second) {
     if (first.columns() != second.rows()) {
         throw std::invalid_argument("Number of columns in the first matrix must equal the number of rows in the second matrix.");
     }
@@ -143,7 +126,7 @@ Matrix Matrix_Autocreate(const Matrix& first, const Matrix& second) {
 
 
 // Matrix Addition Function
-void Matrix_Add(const Matrix& matrix1, const Matrix& matrix2, Matrix& result) {
+void Matrix_Add(Matrix& result,const Matrix& matrix1, const Matrix& matrix2) {
 
     if (&result == &matrix1 || &result == &matrix2) {
         throw std::invalid_argument("Result matrix must be different from input matrices.");
@@ -164,7 +147,7 @@ void Matrix_Add(const Matrix& matrix1, const Matrix& matrix2, Matrix& result) {
 }
 
 // Matrix subtraction function
-void Matrix_Subtract(const Matrix& matrix1, const Matrix& matrix2,Matrix& result) {
+void Matrix_Subtract(Matrix& result,const Matrix& matrix1, const Matrix& matrix2) {
     if (&result == &matrix1 || &result == &matrix2) {
         throw std::invalid_argument("Result matrix must be different from input matrices.");
     }
@@ -198,6 +181,7 @@ void Matrix_Transpose(Matrix& final, const Matrix& original) {
 }
 
 
+
 //// Operations needed for Neural Networks
 
 // Function to perform Hadamard Product (element-wise multiplication)
@@ -221,7 +205,12 @@ void Matrix_Hadamard_Product(Matrix& result, const Matrix& a, const Matrix& b) {
 }
 
 // Function to broadcast an existing matrix to a larger size specified by newRows and newColumns
-void Matrix_Broadcast(Matrix& result, const Matrix& original, int newRows, int newColumns) {
+void Matrix_Broadcast( Matrix& result,const Matrix& original,int newRows, int newColumns) {
+
+    if (&result == &original ) {
+        throw std::invalid_argument("Result matrix must be different from input matrices.");
+    }
+
     if (newRows % original.rows() != 0 || newColumns % original.columns() != 0) {
         throw std::invalid_argument("New dimensions must be multiples of original dimensions.");
     }
@@ -286,7 +275,7 @@ void Matrix_Absolute(Matrix& result, const Matrix& original) {
 }
 
 // Function to sum columns of a matrix and store in the destination matrix
-void Matrix_SumColumns(Matrix& dest, const Matrix& src) {
+void Matrix_Sum_Columns(Matrix& dest,const Matrix& src) {
 
     if (&dest == &src) {
         throw std::invalid_argument("Result matrix must be different from input matrices.");
@@ -306,16 +295,6 @@ void Matrix_SumColumns(Matrix& dest, const Matrix& src) {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -357,17 +336,23 @@ void Matrix_Xavier_Uniform(Matrix& matrix) {
 //// Input Output Preprocessing Functions
 
 
+// Function to convert 2D array data to a Matrix object with stride and step
+Matrix Matrix_Data_Preprocessor( int desiredRows, int desiredColumns, int stride, int step, const std::vector<std::vector<float>>& data) {
+    int totalColumns = data[0].size();
+    int totalRows=data.size();
 
-Matrix CreateMatrixWithStride(int maxColumns, int totalRows, int desiredRows, int desiredColumns, int stride, int step, const std::vector<float>& data) {
+    if(desiredRows+step>totalRows || desiredColumns+stride>totalColumns){
+        throw std::invalid_argument("The dimensions would exceed than what is available in the input matrix");
+    }
+
+
     Matrix result(desiredRows, desiredColumns);
 
-    int index = 0;
     for (int i = 0; i < desiredRows && (i + step) < totalRows; ++i) {
         int baseRow = i + step;
         for (int j = stride; j < desiredColumns + stride; ++j) {
-            if (j < maxColumns) {
-                int dataIndex = baseRow * maxColumns + j;
-                result(i, j - stride) = data[dataIndex];
+            if (j < totalColumns) {
+                result(i, j - stride) = data[baseRow][j];
             } else {
                 result(i, j - stride) = 0;
             }
@@ -378,24 +363,3 @@ Matrix CreateMatrixWithStride(int maxColumns, int totalRows, int desiredRows, in
 
 
 
-
-
-
-
-
-
-
-
-
-
-int main(){
-    Matrix A(3,2,2);
-    Matrix B(3,2,3);
-    Matrix::Print(A);
-    Matrix_Add(A,A,B);
-    Matrix::Print(A);
-    return 0;
-
-
-
-}
