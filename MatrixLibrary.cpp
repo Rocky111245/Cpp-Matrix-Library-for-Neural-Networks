@@ -4,6 +4,11 @@
 
 // Matrix class member functions
 
+// Default constructor
+Matrix::Matrix() : rows_(0), columns_(0), data_(nullptr) {
+    // Initialize members to safe default values
+}
+
 Matrix::Matrix(int rows, int columns)
         : rows_(rows), columns_(columns), data_(std::make_unique<float[]>(rows * columns)) {
     if (rows <= 0 || columns <= 0) {
@@ -20,26 +25,39 @@ Matrix::Matrix(int rows, int columns, float value)
     std::fill(data_.get(), data_.get() + rows * columns, value);
 }
 
+//copy constructor
 Matrix::Matrix(const Matrix& other)
         : rows_(other.rows_), columns_(other.columns_), data_(std::make_unique<float[]>(other.rows_ * other.columns_)) {
     std::copy(other.data_.get(), other.data_.get() + (other.rows_ * other.columns_), data_.get());
-    std::cout << "Matrix copied\n";
 }
 
+//move constructor
 Matrix::Matrix(Matrix&& other) noexcept
         : rows_(other.rows_), columns_(other.columns_), data_(std::move(other.data_)) {
     other.rows_ = 0;
     other.columns_ = 0;
-    std::cout << "Matrix moved\n";
 }
+
+
+/**
+ * Assignment operator that copies data from another matrix.
+ * If the dimensions of the matrices don't match, this matrix will be
+ * automatically resized to match the source matrix.
+ *
+ * @param other The source matrix to copy from
+ * @return Reference to this matrix after assignment
+ */
 
 Matrix& Matrix::operator=(const Matrix& other) {
     if (this != &other) {
+        // Auto-resize if dimensions don't match
         if (rows_ != other.rows_ || columns_ != other.columns_) {
-            throw std::invalid_argument("Matrices dimensions do not match.");
+            rows_ = other.rows_;
+            columns_ = other.columns_;
+            data_ = std::make_unique<float[]>(rows_ * columns_);
         }
-        data_ = std::make_unique<float[]>(other.rows_ * other.columns_);
-        std::copy(other.data_.get(), other.data_.get() + (other.rows_ * other.columns_), data_.get());
+        std::copy(other.data_.get(), other.data_.get() + (rows_ * columns_), data_.get());
+
     }
     return *this;
 }
@@ -65,6 +83,7 @@ void Matrix::Print(const Matrix& matrix) {
     }
 }
 
+//Getter Functions
 float& Matrix::operator()(int row, int column) {
     return data_[row * columns_ + column];
 }
@@ -81,6 +100,29 @@ int Matrix::columns() const {
     return columns_;
 }
 
+
+//Gives access to full data via a raw pointer.Read only.
+const float* Matrix::Matrix_Get_All_Data() const {
+    return data_.get();
+}
+
+//Gives access to selected data
+const float& Matrix::Matrix_Get_Selected_Data(const int index) const {
+    if (index < 0 || index >= rows_ * columns_) {
+        throw std::out_of_range("Matrix index out of range");
+    }
+    return data_[index];
+}
+
+//Setter Functions
+
+//This type of function is needed as it reduces cognitive load by removing one index point
+void Matrix::Matrix_Set_Data(const float value, const int iteration_number) {
+    if (iteration_number < 0 || iteration_number >= rows_ * columns_) {
+        throw std::out_of_range("Matrix index out of range");
+    }
+    data_[iteration_number] = value;
+}
 
 
 //// Core Operations
@@ -111,26 +153,8 @@ void Matrix_Multiply( Matrix& result,const Matrix& first,const Matrix& second) {
         }
     }
 }
-
-//This is a function that automatically creates a Matrix object based on desired Matrices that
-//will be used during multiplication
-
-// Helper function to create a result matrix for multiplication
-Matrix Matrix_AutoCreate(const Matrix& first, const Matrix& second) {
-    if (first.columns() != second.rows()) {
-        throw std::invalid_argument("Number of columns in the first matrix must equal the number of rows in the second matrix.");
-    }
-    return Matrix(first.rows(), second.columns());
-}
-
-
-
 // Matrix Addition Function
 void Matrix_Add(Matrix& result,const Matrix& matrix1, const Matrix& matrix2) {
-
-    if (&result == &matrix1 || &result == &matrix2) {
-        throw std::invalid_argument("Result matrix must be different from input matrices.");
-    }
     if (matrix1.rows() != matrix2.rows() || matrix1.columns() != matrix2.columns()) {
         throw std::invalid_argument("Matrices dimensions do not match.");
     }
@@ -146,11 +170,28 @@ void Matrix_Add(Matrix& result,const Matrix& matrix1, const Matrix& matrix2) {
     }
 }
 
+
+
+
+
+//This is a function that automatically creates a Matrix object based on desired Matrices that
+//will be used during multiplication
+
+// Helper function to create a result matrix for multiplication
+Matrix Matrix_AutoCreate(const Matrix& first, const Matrix& second) {
+    if (first.columns() != second.rows()) {
+        throw std::invalid_argument("Number of columns in the first matrix must equal the number of rows in the second matrix.");
+    }
+    return Matrix(first.rows(), second.columns());
+}
+
+
+
+
+
 // Matrix subtraction function
 void Matrix_Subtract(Matrix& result,const Matrix& matrix1, const Matrix& matrix2) {
-    if (&result == &matrix1 || &result == &matrix2) {
-        throw std::invalid_argument("Result matrix must be different from input matrices.");
-    }
+
 
     if (matrix1.rows() != matrix2.rows() || matrix1.columns() != matrix2.columns()) {
         throw std::invalid_argument("Matrices dimensions do not match.");
@@ -176,6 +217,14 @@ void Matrix_Transpose(Matrix& final, const Matrix& original) {
     for (int i = 0; i < original.rows(); ++i) {
         for (int j = 0; j < original.columns(); ++j) {
             final(j, i) = original(i, j);
+        }
+    }
+}
+
+void Matrix_Fill(Matrix& matrix, float value) {
+    for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.columns(); ++j) {
+            matrix(i, j) = value;
         }
     }
 }

@@ -11,18 +11,27 @@
 
 class Matrix {
 public:
+    Matrix();  // Default Constructor
     Matrix(int rows, int columns);
     Matrix(int rows, int columns, float value);
     Matrix(const Matrix& other);
     Matrix(Matrix&& other) noexcept;
+
+    //Operator Overloading
     Matrix& operator=(const Matrix& other);
     Matrix& operator=(Matrix&& other) noexcept;
-
     static void Print(const Matrix& matrix);
     float& operator()(int row, int column);
     const float& operator()(int row, int column) const;
+
+    //Getter Functions
     int rows() const;
     int columns() const;
+    const float *Matrix_Get_All_Data() const;
+    const float& Matrix_Get_Selected_Data(const int index) const;
+
+    //Setter Functions
+    void Matrix_Set_Data(const float value, int iteration_number);
 
 private:
     int rows_;
@@ -36,7 +45,7 @@ Matrix Matrix_AutoCreate(const Matrix& first, const Matrix& second);
 void Matrix_Add(Matrix& result, const Matrix& matrix1, const Matrix& matrix2);
 void Matrix_Subtract(Matrix& result, const Matrix& matrix1, const Matrix& matrix2);
 void Matrix_Transpose(Matrix& final, const Matrix& original);
-
+void Matrix_Fill(Matrix& matrix, float value);
 // Neural Network Operations
 void Matrix_Hadamard_Product(Matrix& result, const Matrix& a, const Matrix& b);
 void Matrix_Broadcast(Matrix& result, const Matrix& original, int newRows, int newColumns);
